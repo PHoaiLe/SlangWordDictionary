@@ -5,9 +5,9 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.GridBagConstraints;
+
 import javax.swing.JComponent;
-import javax.smartcardio.CommandAPDU;
+
 import javax.swing.*;
 import java.io.*;
 
@@ -131,7 +131,7 @@ class mainGUI
         this.mainPanel = new JPanel(controlLayout);
         this.searchMenu = new SearchMenu(state);
         this.randomMenu = new RandomMenu();
-        this.historyMenu = new HistoryMenu();
+        this.historyMenu = new HistoryMenu(state);
         this.quizMenu = new QuizMenu();
 
         
@@ -203,7 +203,7 @@ class mainGUI
                         {
                             String[] request = searchMenu.getInputText(); //request[0]:inputKey; request[1]:mode
                             System.out.println("Slang: " + request[0] + " Mode: " + request[1]);
-                            if(request[1].equals("Slang"))
+                            if(request[1].equals("Slang") && (request[0] != ""))
                             {
                                 String[] res = data.searchByKey(request[0]);
                                 if(res[0] == null)
@@ -214,6 +214,7 @@ class mainGUI
                                 else
                                 {
                                     searchMenu.setRepresentResult(res[0], res[1], null);
+                                    historyMenu.addNewWord(res);
                                 }
                             }
                         }break;
@@ -294,7 +295,9 @@ class SearchMenu extends JPanel
     SearchMenu(JRadioButton state)
     {
         RelativeWords = new Vector<String>();
+        RelativeWords.addElement("Select");
         RelativeMeaning = new Vector<String>();
+        RelativeMeaning.addElement("Not a meaning of any Slang word");
         curDefinition = "";
         curSlagWord = "";
 
@@ -363,26 +366,24 @@ class SearchMenu extends JPanel
         JLabel preRecomLabel = new JLabel("Recommend:");
         preRecomList = new JComboBox<String>(RelativeWords);
         preRecomList.setPreferredSize(new Dimension(100,30));
-        preRecomList.setSelectedIndex(-1);
         // preRecomList.setLayoutOrientation(JList.VERTICAL);
         JScrollBar scrollBar = new JScrollBar(JScrollBar.VERTICAL);
         scrollBar.add(preRecomList);
         scrollBar.setPreferredSize(new Dimension(100, 100));
         
-        preRecomList.addActionListener(new ActionListener()
+        preRecomList.addItemListener(new ItemListener()
         {
-            public void actionPerformed(ActionEvent ae)
+            public void itemStateChanged(ItemEvent ie)
             {
-                int selectedIndex = preRecomList.getSelectedIndex();
-                System.out.println("Index: " + selectedIndex);
-                if(preRecomList.getSelectedIndex() != -1)
+                if(ie.getStateChange() == 1)
                 {
+                    int selectedIndex = preRecomList.getSelectedIndex();
+                    System.out.println("Index: " + selectedIndex);
                     System.out.println("Re-w: " + RelativeWords.elementAt(selectedIndex));
                     System.out.println("Re-m: " + RelativeMeaning.elementAt(selectedIndex));
                     preSlagText.setText(RelativeWords.elementAt(selectedIndex));
-                    preDefinitionText.setText(RelativeMeaning.elementAt(selectedIndex));
+                    preDefinitionText.setText(RelativeMeaning.elementAt(selectedIndex))
                 }
-                
             }
         });
 
@@ -454,6 +455,8 @@ class SearchMenu extends JPanel
         {
             RelativeWords.clear();
             RelativeMeaning.clear();
+            RelativeWords.addElement("Select");
+            RelativeMeaning.addElement("not a meaning of any Slang word");
             Enumeration<String> keys = recommend.keys();
             while(keys.hasMoreElements())
             {
@@ -477,12 +480,96 @@ class SearchMenu extends JPanel
 
 class HistoryMenu extends JPanel
 {
-    private 
+    private JComboBox history;
+    private Vector<String> searchedWords;
+    private Vector<String> searchedWordsMeaning;
+    private String SlagText;
+    private String DefText;
+
+    HistoryMenu(JRadioButton component)
+    {
+        SlagText = new String();
+        DefText = new String();
+
+        searchedWords = new Vector<String>();
+        searchedWords.addElement("Select");
+        searchedWordsMeaning = new Vector<String>();
+        searchedWordsMeaning.addElement("not a meaning of any Slang word");
+
+        history = new JComboBox(searchedWords);
+        history.setPreferredSize(new Dimension(200, 30));
+        JScrollBar scrollBar = new JScrollBar(Scrollbar.VERTICAL);
+        scrollBar.add(history);
+        scrollBar.setPreferredSize(new Dimension(100,100));
+        
+        JLabel title = new JLabel("HISTORY");
+        JLabel preSlagLabel = new JLabel("Slang word:");
+        JTextArea preSlagText = new JTextArea(1, 20);
+        
+        JLabel preDefinitionLabel = new JLabel("Meaning:");
+        JTextArea preDefinitionText = new JTextArea(20, 20);
+
+        history.addItemListener(new ItemListener()
+        {
+            public void itemStateChanged(ItemEvent ie)
+            {
+                if(ie.getStateChange() == 1)
+                {
+                    int selectedIndex = history.getSelectedIndex();
+                    preSlagText.setText(searchedWords.elementAt(selectedIndex));
+                    preDefinitionText.setText(searchedWordsMeaning.elementAt(selectedIndex));
+                }
+            }
+        });
+
+        this.setLayout(new BorderLayout());
+        JPanel top = new JPanel();
+        top.add(title);
+        top.add(history);
+        this.add(top, BorderLayout.PAGE_START);
+
+        JPanel body1 = new JPanel();
+        body1.add(preSlagLabel);
+        body1.add(preSlagText);
+
+        JPanel body2 = new JPanel();
+        body2.add(preDefinitionLabel);
+        body2.add(preDefinitionText);
+
+        JPanel body = new JPanel(new BorderLayout());
+        body.setSize(new Dimension(500,500));
+        body.add(body1, BorderLayout.CENTER);
+        body.add(body2, BorderLayout.PAGE_END);
+        // GridBagConstraints gbc = new GridBagConstraints();
+        // gbc.insets = new Insets(1,5,5,5);
+
+        // gbc.gridx = 0;
+        // gbc.gridy = 0;
+        // gbc.gridwidth = 3;
+        // body.add(body1, gbc);
+
+        // gbc.gridx = 0;
+        // gbc.gridy = 3;
+        // gbc.gridwidth = 3;
+        // gbc.fill = GridBagConstraints.HORIZONTAL;
+        // body.add(body2, gbc);
+
+        this.add(body, BorderLayout.CENTER);
+    }
+
+    public void addNewWord(String[] newWord)
+    {
+        if(searchedWords.contains(newWord[0]) == false)
+        {
+            searchedWords.addElement(newWord[0]);
+            searchedWordsMeaning.addElement(newWord[1]);
+        }
+    }
 }
 
 class RandomMenu extends JPanel
 {
-
+    
 }
 
 class QuizMenu extends JPanel
