@@ -1,8 +1,10 @@
 import java.util.Hashtable;
+import java.util.Vector;
 import java.util.jar.Manifest;
 import java.util.ArrayList;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.GridBagConstraints;
 
 
 import javax.swing.*;
@@ -33,6 +35,7 @@ class mainGUI
     private QuizMenu quizMenu;
     private CardLayout controlLayout;
 
+    private curOption = 1;
     private String sSEARCH = "search";
     private String sRANDOM = "random";
     private String sHISTORY = "history";
@@ -61,6 +64,7 @@ class mainGUI
             public void actionPerformed(ActionEvent ae)
             {
                 switchPanel(1);
+                this.curOption = 1;
             }
         });
 
@@ -69,6 +73,7 @@ class mainGUI
             public void actionPerformed(ActionEvent ae)
             {
                 switchPanel(2);
+                this.curOption = 2
             }
         });
 
@@ -77,6 +82,7 @@ class mainGUI
             public void actionPerformed(ActionEvent ae)
             {
                 switchPanel(3);
+                this.curOption = 3;
             }
         });
 
@@ -85,6 +91,7 @@ class mainGUI
             public void actionPerformed(ActionEvent ae)
             {
                 switchPanel(4);
+                this.curOption = 4;
             }
         });
 
@@ -100,6 +107,8 @@ class mainGUI
         mainPanel.add(historyMenu, this.sHISTORY);
         mainPanel.add(quizMenu, this.sQUIZ);
         this.frame.add(mainPanel, BorderLayout.CENTER);
+
+
     }
 
     public void runGUI()
@@ -119,7 +128,8 @@ class mainGUI
 
         this.controlLayout.show(this.mainPanel, this.sSEARCH);
        
-        this.frame.pack();
+        this.frame.setSize(new Dimension(500, 500));
+        // this.frame.pack();
         this.frame.setLocationRelativeTo(null);
         this.frame.setVisible(true);
     }
@@ -160,9 +170,16 @@ class SearchMenu extends JPanel
     private String selectedMode;
     private JTextField searchField;
     private String text;
+    private Vector<String> RelativeWords;
+    private String curSlagWord;
+    private String curDefinition;
 
     SearchMenu()
     {
+        RelativeWords = null;
+        curDefinition = "";
+        curSlagWord = "";
+
         this.setLayout(new BorderLayout());
 
         selectedMode = new String("Slang");
@@ -197,6 +214,7 @@ class SearchMenu extends JPanel
         });
 
         ButtonGroup bgr = new ButtonGroup();
+        rb1.setSelected(true);
         top.add(Search);
         bgr.add(rb1);
         bgr.add(rb2);
@@ -205,7 +223,7 @@ class SearchMenu extends JPanel
         this.add(top, BorderLayout.PAGE_START);
 
         JPanel searchPanel = new JPanel();
-        searchField = new JTextField(10);
+        searchField = new JTextField(20);
         JButton searchButton = new JButton("Search");
         searchButton.addActionListener(new ActionListener()
         {
@@ -216,14 +234,85 @@ class SearchMenu extends JPanel
                 {
                     text = inputedText;
                 }
+                System.out.println(text);
+                System.out.println(selectedMode);
+                preSlagText.setText(curSlagWord);
+                preDefinitionText.setText(curDefinition);
             }
         });
-        searchPanel.add(searchButton);
+        
         searchPanel.add(searchField);
+        searchPanel.add(searchButton);
         this.add(searchPanel, BorderLayout.CENTER);
+
+        JPanel bottom = new JPanel();
+        bottom.setSize(new Dimension(500, 300));
+        
+        bottom.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5,5,5,5);
+
+        JLabel preSlagLabel = new JLabel("Slang word:");
+        JTextArea preSlagText = new JTextArea(1, 20);
+        JLabel preDefinitionLabel = new JLabel("Definition:");
+        JTextArea preDefinitionText = new JTextArea(10, 20);
+
+        JLabel preRecomLabel = new JLabel("Recommend:");
+        JList preRecomList = new JList<String>(RelativeWords);
+        preRecomList.setLayoutOrientation(JList.VERTICAL);
+        JScrollBar scrollBar = new JScrollBar(JScrollBar.VERTICAL);
+        scrollBar.add(preRecomList);
+        scrollBar.setPreferredSize(new Dimension(100, 100));
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        bottom.add(preSlagLabel, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        bottom.add(preSlagText, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        bottom.add(preDefinitionLabel, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        bottom.add(preDefinitionText, gbc);
+
+        gbc.gridx = 2;
+        gbc.gridy = 0;
+        bottom.add(preRecomLabel, gbc);
+
+        gbc.gridx = 2;
+        gbc.gridy = 1;
+        bottom.add(preRecomList, gbc);
+        
+        this.add(bottom, BorderLayout.PAGE_END);
     }
 
+    public String[] getInputText()
+    {
+        String[] result = new String[2];
+        result[0] = text;
+        result[1] = selectedMode;
+        return result;
+    }
 
+    public void setRepresentResult(String foundSlag, String foundDef, Vector<String> recommend)
+    {
+        if(foundSlag == " " || foundSlag == null)
+        {
+            curSlagWord = "No result";
+            curDefinition = " ";
+            RelativeWords.clear();
+            return;
+        }
+        curSlagWord = foundSlag;
+        curDefinition = foundDef;
+        RelativeWords.clear();
+        RelativeWords.addAll(recommend);
+    }
 }
 
 class HistoryMenu extends JPanel
