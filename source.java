@@ -1,6 +1,6 @@
 import java.util.Hashtable;
 import java.util.Vector;
-
+import java.util.*;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.awt.*;
@@ -123,7 +123,30 @@ class mySlangWordDictionary
 
   public Hashtable<String, String> searchRelativeDefinition(String inputKey)
   {
-    
+    if(inputKey.equals(null) == true || inputKey.equals("") == true)
+    {
+        return null;
+    }
+    System.out.println("Meaning search: "+inputKey);
+    Hashtable<String, String> res = new Hashtable<String, String>();
+    Enumeration<String> keyCollection = this.Dictionary.keys();
+    while(keyCollection.hasMoreElements())
+    {
+        String key = keyCollection.nextElement();
+        String meaning = this.Dictionary.get(key);
+        if(meaning.contains(inputKey) == true);
+        {
+            res.put(key, meaning);
+        }
+    }
+    if(res.size() == 0)
+    {
+        return null;
+    }
+    else
+    {
+        return res;
+    }
   }
   
 }
@@ -234,7 +257,7 @@ class mainGUI
                         {
                             String[] request = searchMenu.getInputText(); //request[0]:inputKey; request[1]:mode
                             System.out.println("Slang: " + request[0] + " Mode: " + request[1]);
-                            if(request[1].equals("Slang") && (request[0] != ""))
+                            if((request[1].equals("Slang") == true) && (request[0].equals("") == false))
                             {
                                 String[] res = data.searchByKey(request[0]);
                                 if(res[0] == null)
@@ -246,6 +269,18 @@ class mainGUI
                                 {
                                     searchMenu.setRepresentResult(res[0], res[1], null);
                                     historyMenu.addNewWord(res);
+                                }
+                            }
+                            else if((request[1].equals("Meaning")) == true && (request[0].equals("") == false))
+                            {
+                                Hashtable<String, String> res = data.searchRelativeDefinition(request[0]);
+                                if(res == null)
+                                {
+                                    searchMenu.setRepresentResult("Nome", "", res);
+                                }
+                                else
+                                {
+                                    searchMenu.setRepresentResult("^_^", "Please check the Recommend area", res);
                                 }
                             }
                         }break;
@@ -260,7 +295,7 @@ class mainGUI
                             int request = randomMenu.getRandomSelection(data.getSize());
                             String[] res = data.getElementByIndex(request);
                             randomMenu.setRandomInput(res);
-                        }
+                        }break;
                     }
                     state.setSelected(false);
                 }
@@ -464,7 +499,7 @@ class SearchMenu extends JPanel
             public void actionPerformed(ActionEvent ae)
             {
                 String inputedText = searchField.getText();
-                if(inputedText != "" || inputedText != null)
+                if(inputedText != "" && inputedText != null)
                 {
                     text = inputedText;
                 }
@@ -512,8 +547,6 @@ class SearchMenu extends JPanel
                 RelativeWords.addElement(aKey);
                 RelativeMeaning.addElement(recommend.get(aKey));
             }
-            System.out.println(RelativeWords);
-            System.out.println(RelativeMeaning);
         }
         else
         {
@@ -695,7 +728,6 @@ class RandomMenu extends JPanel
         int year = date.getYear();
         int res = (day*month*year + step)% sizeOfDictionary;
         step = (step + time.getSecond()) % sizeOfDictionary;
-        System.out.println("random num: " + res + " step: "+step);
         return res;
     }
 }
