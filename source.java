@@ -10,6 +10,8 @@ import javax.swing.JComponent;
 
 import javax.swing.*;
 import java.io.*;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 
 public class source {
@@ -94,6 +96,35 @@ class mySlangWordDictionary
     }
     return result;
   }
+
+  public int getSize()
+  {
+    return this.Dictionary.size();
+  }
+
+  public String[] getElementByIndex(int index)
+  {
+    if(index < 0 || index > this.Dictionary.size()-1)
+    {
+        return null;
+    }
+    String[] res = new String[2];
+    Enumeration<String> keyCollection = this.Dictionary.keys();
+    String selectedKey = new String("");
+    while(keyCollection.hasMoreElements() && index > 1)
+    {
+        keyCollection.nextElement();
+        index-=1;
+    }
+    res[0] = keyCollection.nextElement();
+    res[1] = this.Dictionary.get(res[0]);
+    return res;
+  }
+
+  public Hashtable<String, String> searchRelativeDefinition(String inputKey)
+  {
+    
+  }
   
 }
 
@@ -130,9 +161,9 @@ class mainGUI
         controlLayout = new CardLayout(10,10);
         this.mainPanel = new JPanel(controlLayout);
         this.searchMenu = new SearchMenu(state);
-        this.randomMenu = new RandomMenu();
+        this.randomMenu = new RandomMenu(state);
         this.historyMenu = new HistoryMenu(state);
-        this.quizMenu = new QuizMenu();
+        this.quizMenu = new QuizMenu(state);
 
         
         JPanel controlPanel = new JPanel(new FlowLayout());
@@ -218,6 +249,18 @@ class mainGUI
                                 }
                             }
                         }break;
+
+                        case 2:
+                        {
+
+                        }break;
+
+                        case 3:
+                        {
+                            int request = randomMenu.getRandomSelection(data.getSize());
+                            String[] res = data.getElementByIndex(request);
+                            randomMenu.setRandomInput(res);
+                        }
                     }
                     state.setSelected(false);
                 }
@@ -360,8 +403,13 @@ class SearchMenu extends JPanel
 
         JLabel preSlagLabel = new JLabel("Slang word:");
         preSlagText = new JTextArea(1, 20);
+        preSlagText.setLineWrap(true);
+        preSlagText.setWrapStyleWord(true);
+
         JLabel preDefinitionLabel = new JLabel("Definition:");
         preDefinitionText = new JTextArea(10, 20);
+        preDefinitionText.setLineWrap(true);
+        preDefinitionText.setWrapStyleWord(true);
 
         JLabel preRecomLabel = new JLabel("Recommend:");
         preRecomList = new JComboBox<String>(RelativeWords);
@@ -382,7 +430,7 @@ class SearchMenu extends JPanel
                     System.out.println("Re-w: " + RelativeWords.elementAt(selectedIndex));
                     System.out.println("Re-m: " + RelativeMeaning.elementAt(selectedIndex));
                     preSlagText.setText(RelativeWords.elementAt(selectedIndex));
-                    preDefinitionText.setText(RelativeMeaning.elementAt(selectedIndex))
+                    preDefinitionText.setText(RelativeMeaning.elementAt(selectedIndex));
                 }
             }
         });
@@ -474,7 +522,7 @@ class SearchMenu extends JPanel
         }
         preSlagText.setText(curSlagWord);
         preDefinitionText.setText(curDefinition);
-        preRecomList = new JComboBox<String>(RelativeWords);
+        // preRecomList = new JComboBox<String>(RelativeWords);
     }
 }
 
@@ -505,9 +553,13 @@ class HistoryMenu extends JPanel
         JLabel title = new JLabel("HISTORY");
         JLabel preSlagLabel = new JLabel("Slang word:");
         JTextArea preSlagText = new JTextArea(1, 20);
+        preSlagText.setLineWrap(true);
+        preSlagText.setWrapStyleWord(true);
         
         JLabel preDefinitionLabel = new JLabel("Meaning:");
         JTextArea preDefinitionText = new JTextArea(20, 20);
+        preDefinitionText.setLineWrap(true);
+        preDefinitionText.setWrapStyleWord(true);
 
         history.addItemListener(new ItemListener()
         {
@@ -569,10 +621,89 @@ class HistoryMenu extends JPanel
 
 class RandomMenu extends JPanel
 {
-    
+    private String randomSlag;
+    private String randomMeaning;
+    private JTextArea preSlagText;
+    private JTextArea preDefinitionText;
+    private int step;
+
+    RandomMenu(JRadioButton component)
+    {
+        randomSlag = new String("");
+        randomMeaning = new String("");
+        step = 11;
+
+        this.setLayout(new BorderLayout());
+
+        JButton random = new JButton("GO!");
+        // random.setPreferredSize(new Dimension(50,80));
+
+        JPanel panel1 = new JPanel();
+        JLabel preSlagLabel = new JLabel("Slang word:");
+        preSlagText = new JTextArea(1, 20);
+        preSlagText.setLineWrap(true);
+        preSlagText.setWrapStyleWord(true);
+        panel1.add(preSlagLabel);
+        panel1.add(preSlagText);
+
+        JPanel panel2 = new JPanel();
+        JLabel preDefinitionLabel = new JLabel("Meaning:");
+        preDefinitionText = new JTextArea(10,20);
+        preDefinitionText.setLineWrap(true);
+        preDefinitionText.setWrapStyleWord(true);
+        panel2.add(preDefinitionLabel);
+        panel2.add(preDefinitionText);
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        // panel.add(random);
+        panel.add(panel1);
+        panel.add(panel2);
+       
+        this.add(random, BorderLayout.PAGE_START);
+        this.add(panel, BorderLayout.CENTER);
+
+        random.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent ae)
+            {
+                preSlagText.setText(randomSlag);
+                preDefinitionText.setText(randomMeaning);
+                component.setSelected(true);
+            }
+        });
+    }
+
+    public void setRandomInput(String[] input)
+    {
+        if(input == null)
+        {
+            return;
+        }
+        randomSlag = input[0];
+        randomMeaning = input[1];
+        preSlagText.setText(randomSlag);
+        preDefinitionText.setText(randomMeaning);
+    }
+
+    public int getRandomSelection(int sizeOfDictionary)
+    {
+        LocalDate date = LocalDate.now();
+        LocalTime time = LocalTime.now();
+        int day = date.getDayOfMonth();
+        int month = date.getMonthValue();
+        int year = date.getYear();
+        int res = (day*month*year + step)% sizeOfDictionary;
+        step = (step + time.getSecond()) % sizeOfDictionary;
+        System.out.println("random num: " + res + " step: "+step);
+        return res;
+    }
 }
 
 class QuizMenu extends JPanel
 {
+    QuizMenu(JRadioButton component)
+    {
 
+    }
 }
