@@ -7,6 +7,7 @@ import java.awt.*;
 import java.awt.event.*;
 
 import javax.swing.JComponent;
+import javax.swing.event.InternalFrameListener;
 import javax.lang.model.util.ElementScanner14;
 import javax.swing.*;
 import java.io.*;
@@ -47,6 +48,7 @@ class mySlangWordDictionary
             }
             
         }
+        file.close();
         return true;
     }
     catch(FileNotFoundException f)
@@ -216,6 +218,33 @@ class mySlangWordDictionary
     this.Dictionary.clear();
   }
 
+  public boolean saveToFile(String filename)
+  {
+    try
+    {
+        BufferedWriter file = new BufferedWriter(new FileWriter(filename));
+        Enumeration<String> keyCollection = this.Dictionary.keys();
+        file.write("Slag`Meaning\n");
+        while(keyCollection.hasMoreElements())
+        {
+            String key = keyCollection.nextElement();
+            String meaning = this.Dictionary.get(key);
+            String aLine = key + this.SPLIT_SLANGWORD_CHAR + meaning + "\n";
+            file.append(aLine);
+        }
+        file.close();
+        return true;
+    }
+    catch(FileNotFoundException f) 
+    {
+        return false;
+    }
+    catch(IOException e)
+    {
+        return false;
+    }
+  }
+
 }
 
 class mainGUI
@@ -241,7 +270,7 @@ class mainGUI
     private String OriginalDataFile = "./slang.txt";
     private String ChangedDataFile = "./custom.txt";
     private String setUpPath = "./setup.txt";
-    private int isChanged = 0;
+    private String isChanged = "0";
 
     private JRadioButton state;
 
@@ -252,7 +281,8 @@ class mainGUI
         state.setVisible(true);
         this.data = new mySlangWordDictionary();
         isChanged = import_setUp_data(setUpPath);
-        if(isChanged == 0)
+        System.out.println(isChanged);
+        if(isChanged.equals("0"))
         {
             data.import_Database_fromTXT(this.OriginalDataFile);
         }
@@ -278,6 +308,7 @@ class mainGUI
         JButton randomButton = new JButton("Random");
         JButton quizButton = new JButton("Quiz");
         JButton changeButton = new JButton("Change");
+        JButton exitButton = new JButton("Exit");
 
         searchButton.addActionListener(new ActionListener()
         {
@@ -312,6 +343,7 @@ class mainGUI
             {
                 switchPanel(4);
                 curOption = 4;
+                state.setSelected(true);
             }
         });
 
@@ -324,12 +356,31 @@ class mainGUI
             }
         });
 
+        exitButton.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent ae)
+            {
+                if(isChanged.equals("1")) //data has changed, 
+                {
+                    save_setUp_data(setUpPath);
+                    data.saveToFile(ChangedDataFile);
+                    System.exit(0);
+                }
+                else
+                {
+                    save_setUp_data(setUpPath);
+                    System.exit(0);
+                }
+            }
+        });
+
         this.frame.add(state, BorderLayout.BEFORE_FIRST_LINE);
         controlPanel.add(searchButton);
         controlPanel.add(historyButton);
         controlPanel.add(randomButton);
         controlPanel.add(quizButton);
         controlPanel.add(changeButton);
+        controlPanel.add(exitButton);
         
         this.frame.add(controlPanel, BorderLayout.PAGE_START);
         
@@ -395,6 +446,48 @@ class mainGUI
 
                         case 4:
                         {
+                            int[] request = quizMenu.getRequest(data.getSize());
+
+                            String[] Slags = new String[4];
+                            String[] Meanings = new String[4];
+                            for(int i = 0; i < 4; i++)
+                            {
+                                String[] res = data.getElementByIndex(request[i]);
+                                Slags[i] = res[0];
+                                Meanings[i] = res[1]; 
+                            }
+                            String question;
+                            String[] answers = new String[4];
+                            int answer;
+                            if((request[0] % 2) == 0) //Slang word quiz
+                            {
+                                int answerIndex = request[0] % 4;
+                                for(int i =0; i< 4; i++)
+                                {
+                                    if(i != answerIndex)
+                                    {
+                                        answers[i] = Meanings[i];
+                                    }
+                                }
+                                question = Slags[answerIndex];
+                                answers[answerIndex] = Meanings[answerIndex];
+                                answer = answerIndex;
+                            }
+                            else //Meaning quiz
+                            {
+                                int answerIndex = request[0] % 4;
+                                for(int i =0; i< 4; i++)
+                                {
+                                    if(i != answerIndex)
+                                    {
+                                        answers[i] = Slags[i];
+                                    }
+                                }
+                                question = Meanings[answerIndex];
+                                answers[answerIndex] = Slags[answerIndex];
+                                answer = answerIndex;
+                            }
+                            quizMenu.setQuiz(question, answers, answer + 1);
 
                         }break;
 
@@ -418,7 +511,7 @@ class mainGUI
                                     else
                                     {
                                         changeMenu.setStatus("Add new Slang word successfully...");
-                                        isChanged = 1;
+                                        isChanged = "1";
                                     }
                                 }
                                 else if(request[3].equals(changeMenu.OPTION_UPDATE)) //update
@@ -431,7 +524,7 @@ class mainGUI
                                     else
                                     {
                                         changeMenu.setStatus("Update successfully...");
-                                        isChanged = 1;
+                                        isChanged = "1";
                                     }
                                     
                                 }
@@ -445,7 +538,7 @@ class mainGUI
                                     else
                                     {
                                         changeMenu.setStatus("Delete Slang word successfully...");
-                                        isChanged = 1;
+                                        isChanged = "1";
                                     }
                                 }
 
@@ -461,7 +554,7 @@ class mainGUI
                                 else 
                                 {
                                     changeMenu.setStatus("Add and overwrite the Slang word successully...");
-                                    isChanged = 1;
+                                    isChanged = "1";
                                 }
                             
                             }
@@ -470,7 +563,7 @@ class mainGUI
                                 //request.length = 1;
                                 data.clearCurrentData();
                                 data.import_Database_fromTXT(OriginalDataFile);
-                                isChanged = 0;
+                                isChanged = "0";
                                 changeMenu.setStatus("Reset successfully...");
                             } 
 
@@ -484,6 +577,8 @@ class mainGUI
 
     public void runGUI()
     {
+        
+
         javax.swing.SwingUtilities.invokeLater(new Runnable(){
             public void run()
             {
@@ -538,24 +633,44 @@ class mainGUI
         
     }
 
-    public int import_setUp_data(String filename)
+    public String import_setUp_data(String filename)
     {
         try
         {
-            FileReader file = new FileReader(filename);
-            int res = file.read();
+            BufferedReader file = new BufferedReader(new FileReader(filename));
+            String res = file.readLine();
+            file.close();
+            System.out.println(res);
             return res;
         }
         catch(FileNotFoundException f)
         {
-            return 0;
+            return "0";
         }
         catch(IOException e)
         {
-            return 0;
+            return "0";
         }
     }
 
+    public void save_setUp_data(String filename)
+    {
+        try
+        {
+            BufferedWriter file = new BufferedWriter(new FileWriter(filename));
+            file.write(isChanged);
+            file.close();
+            
+        }
+        catch(FileNotFoundException f)
+        {
+            
+        }
+        catch(IOException e)
+        {
+            
+        }
+    }
 }
 
 class SearchMenu extends JPanel
@@ -935,9 +1050,137 @@ class RandomMenu extends JPanel
 
 class QuizMenu extends JPanel
 {
+    private int answer;
+    private JTextArea t1;
+    private JTextArea t2;
+    private JTextArea t3;
+    private JTextArea t4;
+    private JTextArea question;
+
+    private int ANSWER_1 = 1;
+    private int ANSWER_2 = 2;
+    private int ANSWER_3 = 3;
+    private int ANSWER_4 = 4;
+    private String CORRECT_ANSWER = "The correct answer is ";
+    private int step;
+
     QuizMenu(JRadioButton component)
     {
+        step = 11;
+        answer = 1;
+        JRadioButton a1 = new JRadioButton("");
+        JRadioButton a2 = new JRadioButton("");
+        JRadioButton a3 = new JRadioButton("");
+        JRadioButton a4 = new JRadioButton("");
 
+        t1 = new JTextArea(2, 10);
+        t2 = new JTextArea(2, 10);
+        t3 = new JTextArea(2, 10);
+        t4 = new JTextArea(2, 10);
+
+
+        a1.addItemListener(new ItemListener() {
+            public void itemStateChanged(ItemEvent ie)
+            {
+                if(ie.getStateChange() == 1)
+                {
+                    int check = JOptionPane.showConfirmDialog(null, CORRECT_ANSWER + String.valueOf(answer), "Answer", JOptionPane.YES_NO_OPTION);
+                    if(check == 0)
+                    {
+                        component.setSelected(true);
+                    }
+                }
+            }
+        });
+
+        a2.addItemListener(new ItemListener() {
+            public void itemStateChanged(ItemEvent ie)
+            {
+                if(ie.getStateChange() == 1)
+                {
+                    int check = JOptionPane.showConfirmDialog(null, CORRECT_ANSWER + String.valueOf(answer), "Answer", JOptionPane.YES_NO_OPTION);
+                    if(check == 0)
+                    {
+                        component.setSelected(true);
+                    }
+                }
+            }
+        });
+
+        a3.addItemListener(new ItemListener() {
+            public void itemStateChanged(ItemEvent ie)
+            {
+                if(ie.getStateChange() == 1)
+                {
+                    int check = JOptionPane.showConfirmDialog(null, CORRECT_ANSWER + String.valueOf(answer), "Answer", JOptionPane.YES_NO_OPTION);
+                    if(check == 0)
+                    {
+                        component.setSelected(true);
+                    }
+                }
+            }
+        });
+
+        a4.addItemListener(new ItemListener() {
+            public void itemStateChanged(ItemEvent ie)
+            {
+                if(ie.getStateChange() == 1)
+                {
+                    int check = JOptionPane.showConfirmDialog(null, CORRECT_ANSWER + String.valueOf(answer), "Answer", JOptionPane.YES_NO_OPTION);
+                    if(check == 0)
+                    {
+                        component.setSelected(true);
+                    }
+                }
+            }
+        });
+
+        question = new JTextArea(5,20);
+
+        JPanel questionPanel = new JPanel();
+        JPanel a1a2 = new JPanel(new FlowLayout(FlowLayout.LEADING, 3, 10));
+        JPanel a3a4 = new JPanel(new FlowLayout(FlowLayout.LEADING, 3, 10));
+
+        questionPanel.add(question);
+        a1a2.add(a1);
+        a1a2.add(t1);
+        a1a2.add(a2);
+        a1a2.add(t2);
+        a3a4.add(a3);
+        a3a4.add(t3);
+        a3a4.add(a4);
+        a3a4.add(t4);
+        this.setLayout(new BorderLayout());
+        this.add(question, BorderLayout.PAGE_START);
+        this.add(a1a2, BorderLayout.CENTER);
+        this.add(a3a4, BorderLayout.PAGE_END);
+    }
+
+    public int[] getRequest(int sizeOfDictionary)
+    {
+        int[] request = new int[4];
+        LocalDate date = LocalDate.now();
+        LocalTime time = LocalTime.now();
+        int day = date.getDayOfMonth();
+        int month = date.getMonthValue();
+        int year = date.getYear();
+        int res = (day*month*year + step)% sizeOfDictionary;
+        step = (step + day*time.getSecond()) % sizeOfDictionary;
+        request[0] = res;
+        request[1] = step;
+        request[2] = res*step % sizeOfDictionary;
+        request[3] = day;
+        return request;
+    }
+
+    public void setQuiz(String _question, String[] _answers, int realAnswer)
+    {
+        question.setText(_question);
+        t1.setText("1) " + _answers[0]);
+        t2.setText("2) " + _answers[1]);
+        t3.setText("3) " + _answers[2]);
+        t4.setText("4) " +_answers[3]);
+        answer = realAnswer;
     }
 }
 
