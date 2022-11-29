@@ -7,7 +7,7 @@ import java.awt.*;
 import java.awt.event.*;
 
 import javax.swing.JComponent;
-
+import javax.lang.model.util.ElementScanner14;
 import javax.swing.*;
 import java.io.*;
 import java.time.LocalDate;
@@ -134,7 +134,7 @@ class mySlangWordDictionary
     {
         String key = keyCollection.nextElement();
         String meaning = this.Dictionary.get(key);
-        if(meaning.contains(inputKey));
+        if(meaning.contains(inputKey) == true);
         {
             res.put(key, meaning);
         }
@@ -149,11 +149,73 @@ class mySlangWordDictionary
     }
   }
 
-  public boolean addNewSlangWord(String inputSlag, String inputDefinition)
+  public boolean addNewSlangWord(String inputSlag, String inputDefinition, boolean isOverwrited)
   {
-    
+    if(inputSlag == null || inputSlag == "" || inputDefinition == null || inputDefinition == "")
+    { 
+        return false; 
+    }
+    if(this.Dictionary.containsKey(inputSlag))
+    {
+        if(isOverwrited == true)
+        {
+            this.Dictionary.replace(inputSlag, inputDefinition);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else
+    {
+        this.Dictionary.put(inputSlag, inputDefinition);
+        return true;
+    }
   }
   
+  public boolean updateSlangWord(String oldSlag, String newSlag, String inputDefinition)
+  {
+    if(oldSlag == null || oldSlag == "" || newSlag == null || newSlag == "")
+    { 
+        return false; 
+    }
+    if(this.Dictionary.containsKey(oldSlag))
+    {
+        String aDef;
+        if(inputDefinition.equals(null)) //change key, keep value
+        {
+            aDef = this.Dictionary.get(oldSlag);
+        }
+        else //change both key and value
+        {
+            aDef = inputDefinition;
+        }
+        this.Dictionary.remove(oldSlag);
+        this.Dictionary.put(newSlag, aDef);
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+  }
+
+  public boolean deleteSlangWord(String inputKey)
+  {
+    if((inputKey.equals(null) || inputKey.equals("")) || this.Dictionary.containsKey(inputKey) == false)
+    {
+        return false;
+    }
+    this.Dictionary.remove(inputKey);
+    return true;
+  }
+
+  public void clearCurrentData()
+  {
+    this.Dictionary.clear();
+  }
+
 }
 
 class mainGUI
@@ -177,6 +239,9 @@ class mainGUI
 
     private mySlangWordDictionary data;
     private String OriginalDataFile = "./slang.txt";
+    private String ChangedDataFile = "./custom.txt";
+    private String setUpPath = "./setup.txt";
+    private int isChanged = 0;
 
     private JRadioButton state;
 
@@ -185,9 +250,18 @@ class mainGUI
 
         this.state = new JRadioButton();
         state.setVisible(true);
-
         this.data = new mySlangWordDictionary();
-        data.import_Database_fromTXT(this.OriginalDataFile);
+        isChanged = import_setUp_data(setUpPath);
+        if(isChanged == 0)
+        {
+            data.import_Database_fromTXT(this.OriginalDataFile);
+        }
+        else
+        {
+            data.import_Database_fromTXT(this.ChangedDataFile);
+        }
+        
+
         this.frame = new JFrame();
         controlLayout = new CardLayout(10,10);
         this.mainPanel = new JPanel(controlLayout);
@@ -290,6 +364,7 @@ class mainGUI
                                 {
                                     searchMenu.setRepresentResult(res[0], res[1], null);
                                     historyMenu.addNewWord(res);
+                                    changeMenu.addNewWord(res);
                                 }
                             }
                             else if((request[1].equals("Meaning")) == true && (request[0].equals("") == false))
@@ -326,15 +401,78 @@ class mainGUI
                         case 5:
                         {
                             String[] request = changeMenu.getRequest();
-                            if((request[0].equals(null) || request[0].equals("")) || (request[1].equals("") || request[1].equals(null)) ||
-                            (request[2].equals(changeMenu.NO_OPTION)))
+                            if(request.length == 4) //request[0]: ComboBox, request[1]: inputSlag, request[2]: inputDefinition, request[3]: mode
                             {
-                                break;
-                            }
-                            else if(request[2].equals(changeMenu.OPTION_ADD))
-                            {
+                                if(((request[0] == null || request[0].equals("")) || (request[1].equals("") || request[1] == null)) && 
+                                (request[3].equals(changeMenu.NO_OPTION)))
+                                {
+                                    break;
+                                }
+                                else if(request[3].equals(changeMenu.OPTION_ADD)) //add
+                                {
+                                    boolean check = data.addNewSlangWord(request[1], request[2], false);
+                                    if(check == false)
+                                    {
+                                        changeMenu.setStatus("Existed the same Slang word '"+ request[1]+ "' in the dictionary!");
+                                    }
+                                    else
+                                    {
+                                        changeMenu.setStatus("Add new Slang word successfully...");
+                                        isChanged = 1;
+                                    }
+                                }
+                                else if(request[3].equals(changeMenu.OPTION_UPDATE)) //update
+                                {
+                                    boolean check = data.updateSlangWord(request[0], request[1], request[2]);
+                                    if(check == false)
+                                    {
+                                        changeMenu.setStatus("Failed to update. Please check again...");
+                                    }
+                                    else
+                                    {
+                                        changeMenu.setStatus("Update successfully...");
+                                        isChanged = 1;
+                                    }
+                                    
+                                }
+                                else if(request[3].equals(changeMenu.OPTION_DELETE)) //delete
+                                {
+                                    boolean check = data.deleteSlangWord(request[0]);
+                                    if(check == false)
+                                    {
+                                        changeMenu.setStatus("Failed to delete Slang word. Please check again");
+                                    }
+                                    else
+                                    {
+                                        changeMenu.setStatus("Delete Slang word successfully...");
+                                        isChanged = 1;
+                                    }
+                                }
 
                             }
+                            else if(request.length == 3) // resend adding and overwritting request
+                            {
+                                String[] aRespone = changeMenu.getRequest();
+                                boolean check = data.addNewSlangWord(aRespone[1], request[2], true);
+                                if(check == false)
+                                {
+                                    changeMenu.setStatus("Cannot add and overwrite the Slang word. Please check again...");
+                                }
+                                else 
+                                {
+                                    changeMenu.setStatus("Add and overwrite the Slang word successully...");
+                                    isChanged = 1;
+                                }
+                            
+                            }
+                            else
+                            {
+                                //request.length = 1;
+                                data.clearCurrentData();
+                                data.import_Database_fromTXT(OriginalDataFile);
+                                isChanged = 0;
+                                changeMenu.setStatus("Reset successfully...");
+                            } 
 
                         }break;
                     }
@@ -400,6 +538,23 @@ class mainGUI
         
     }
 
+    public int import_setUp_data(String filename)
+    {
+        try
+        {
+            FileReader file = new FileReader(filename);
+            int res = file.read();
+            return res;
+        }
+        catch(FileNotFoundException f)
+        {
+            return 0;
+        }
+        catch(IOException e)
+        {
+            return 0;
+        }
+    }
 
 }
 
@@ -789,25 +944,35 @@ class QuizMenu extends JPanel
 
 class ChangeMenu extends JPanel
 {
+    private Vector<String> searchedWords;
     private String inputSlag;
     private String inputDefinition;
     private JTextField getSlagText;
     private JTextField getDefinitionText;
     private JLabel status;
     private String INPUT_WARNING = "Please input both 'input field'!";
+    private String NO_SEARCHED_WORD = "Please select a existed Slang word!";
     public final String NO_OPTION = "0";
     public final String OPTION_ADD = "1";
     public final String OPTION_UPDATE = "2";
     public final String OPTION_DELETE = "3";
     public final String OPTION_RESET = "4";
+    public final String OPTION_ADD_OVERWRITE = "5";
     private String option;
+
+    private JComboBox searchedList;
+    private String comboBoxSlangWord;
 
     ChangeMenu(JRadioButton component)
     {
+        comboBoxSlangWord = new String("None");
+        searchedWords = new Vector<String>();
+        searchedWords.addElement("Select");
+
         inputSlag = new String("");
         inputDefinition = new String("");
 
-        option = 0;
+        option = "0";
         JPanel body = new JPanel();
         body.setLayout(new BorderLayout());
 
@@ -819,6 +984,14 @@ class ChangeMenu extends JPanel
 
         JPanel body_23 = new JPanel();
         body_23.setLayout(new BoxLayout(body_23, BoxLayout.Y_AXIS));
+
+        
+        searchedList = new JComboBox(searchedWords);
+        searchedList.setSelectedIndex(0);
+        searchedList.setPreferredSize(new Dimension(100, 30));
+        JScrollBar scrollBar = new JScrollBar(JScrollBar.VERTICAL);
+        scrollBar.add(searchedList);
+        scrollBar.setPreferredSize(new Dimension(200, 200));
 
         JPanel body2 = new JPanel();
         JLabel getDefinitionLabel = new JLabel("Input meaning:");
@@ -832,8 +1005,7 @@ class ChangeMenu extends JPanel
         JButton deleteButton = new JButton("Delete");
         JButton resetButton = new JButton("Reset");
 
-        body_23.add(body2);
-        body_23.add(body3);
+        
 
         status = new JLabel("Status:");
 
@@ -842,6 +1014,9 @@ class ChangeMenu extends JPanel
         body3.add(deleteButton);
         body3.add(resetButton);
 
+        body_23.add(searchedList);
+        body_23.add(body2);
+        body_23.add(body3);
 
 
         body.add(body1, BorderLayout.PAGE_START);
@@ -856,10 +1031,19 @@ class ChangeMenu extends JPanel
             {
                 inputSlag = getSlagText.getText();
                 inputDefinition = getDefinitionText.getText();
+                comboBoxSlangWord = String.valueOf(searchedList.getSelectedItem());
                 if(inputSlag.equals("") || inputSlag.equals(null) || inputDefinition.equals("") || inputDefinition.equals(null))
                 {
                     status.setText("Status: " + INPUT_WARNING);
                 }
+                else if(option.equals(OPTION_ADD_OVERWRITE))
+                {
+                    component.setSelected(true);
+                }
+                // else if(comboBoxSlangWord.equals("Select"))
+                // {
+                //     status.setText("Status: " + NO_SEARCHED_WORD);
+                // }
                 else
                 {
                     option = OPTION_ADD;
@@ -874,9 +1058,14 @@ class ChangeMenu extends JPanel
             {
                 inputSlag = getSlagText.getText();
                 inputDefinition = getDefinitionText.getText();
+                comboBoxSlangWord = String.valueOf(searchedList.getSelectedItem());
                 if(inputSlag.equals("") || inputSlag.equals(null) || inputDefinition.equals("") || inputDefinition.equals(null))
                 {
                     status.setText("Status: " + INPUT_WARNING);
+                }
+                else if(comboBoxSlangWord.equals("Select"))
+                {
+                    status.setText("Status: " + NO_SEARCHED_WORD);
                 }
                 else
                 {
@@ -892,9 +1081,14 @@ class ChangeMenu extends JPanel
             {
                 inputSlag = getSlagText.getText();
                 inputDefinition = getDefinitionText.getText();
+                comboBoxSlangWord = String.valueOf(searchedList.getSelectedItem());
                 if(inputSlag.equals("") || inputSlag.equals(null) || inputDefinition.equals("") || inputDefinition.equals(null))
                 {
                     status.setText("Status: " + INPUT_WARNING);
+                }
+                else if(comboBoxSlangWord.equals("Select"))
+                {
+                    status.setText("Status: " + NO_SEARCHED_WORD);
                 }
                 else
                 {
@@ -932,16 +1126,64 @@ class ChangeMenu extends JPanel
 
     public String[] getRequest()
     {
-        String[] request = new String[3];
-        request[0] = inputSlag;
-        request[1] = inputDefinition;
-        request[2] = option;
+        String[] request = null;
+        if(option.equals(OPTION_ADD))
+        {
+            request = new String[4];
+            request[0] = null;
+            request[1] = inputSlag;
+            request[2] = inputDefinition;
+            request[3] = OPTION_ADD;
+        }
+        else if(option.equals(OPTION_UPDATE))
+        {
+            request = new String[4];
+            request[0] = comboBoxSlangWord;
+            request[1] = inputSlag;
+            request[2] = inputDefinition;
+            request[3] = OPTION_UPDATE;
+        }
+        else if(option.equals(OPTION_DELETE))
+        {
+            request = new String[4];
+            request[0] = comboBoxSlangWord;
+            request[1] = inputSlag;
+            request[2] = inputDefinition;
+            request[3] = OPTION_DELETE;
+        }
+        else if(option.equals(OPTION_ADD_OVERWRITE))
+        {
+            request = new String[3];
+            request[0] = inputSlag;
+            request[1] = inputDefinition;
+            request[2] = OPTION_ADD_OVERWRITE;
+        }
+        else
+        {
+            request = new String[1];
+            request[0] = OPTION_RESET;
+        }
         return request;
     }
 
     public void setStatus(String _status)
     {
+        if(_status.contains("Existed"))
+        {
+           int check = JOptionPane.showConfirmDialog(this, "Do you want to overwrite the Slang word?", "Confirm overwrite", JOptionPane.YES_NO_OPTION);
+           if(check == 0)
+           {
+                option = OPTION_ADD_OVERWRITE; 
+           }      
+        }
         status.setText(_status);
     }
 
+    public void addNewWord(String[] newWord)
+    {
+        if(searchedWords.contains(newWord[0]) ==  false)
+        {
+            searchedWords.addElement(newWord[0]);
+        }
+    }
 }
