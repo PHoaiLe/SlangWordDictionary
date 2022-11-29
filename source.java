@@ -134,7 +134,7 @@ class mySlangWordDictionary
     {
         String key = keyCollection.nextElement();
         String meaning = this.Dictionary.get(key);
-        if(meaning.contains(inputKey) == true);
+        if(meaning.contains(inputKey));
         {
             res.put(key, meaning);
         }
@@ -148,6 +148,11 @@ class mySlangWordDictionary
         return res;
     }
   }
+
+  public boolean addNewSlangWord(String inputSlag, String inputDefinition)
+  {
+    
+  }
   
 }
 
@@ -159,13 +164,16 @@ class mainGUI
     private RandomMenu randomMenu;
     private HistoryMenu historyMenu;
     private QuizMenu quizMenu;
+    private ChangeMenu changeMenu;
     private CardLayout controlLayout;
-
+    
+    //switch-case for changing screens 
     private Integer curOption = 1;
     private String sSEARCH = "search";
     private String sRANDOM = "random";
     private String sHISTORY = "history";
     private String sQUIZ = "quiz";
+    private String sCHANGE = "change";
 
     private mySlangWordDictionary data;
     private String OriginalDataFile = "./slang.txt";
@@ -187,6 +195,7 @@ class mainGUI
         this.randomMenu = new RandomMenu(state);
         this.historyMenu = new HistoryMenu(state);
         this.quizMenu = new QuizMenu(state);
+        this.changeMenu = new ChangeMenu(state);
 
         
         JPanel controlPanel = new JPanel(new FlowLayout());
@@ -194,6 +203,7 @@ class mainGUI
         JButton historyButton = new JButton("History");
         JButton randomButton = new JButton("Random");
         JButton quizButton = new JButton("Quiz");
+        JButton changeButton = new JButton("Change");
 
         searchButton.addActionListener(new ActionListener()
         {
@@ -231,18 +241,29 @@ class mainGUI
             }
         });
 
+        changeButton.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent ae)
+            {
+                switchPanel(5);
+                curOption = 5;
+            }
+        });
+
         this.frame.add(state, BorderLayout.BEFORE_FIRST_LINE);
         controlPanel.add(searchButton);
         controlPanel.add(historyButton);
         controlPanel.add(randomButton);
         controlPanel.add(quizButton);
+        controlPanel.add(changeButton);
         
         this.frame.add(controlPanel, BorderLayout.PAGE_START);
         
-        mainPanel.add(searchMenu, this.sSEARCH);
+        mainPanel.add(searchMenu, this.sSEARCH); 
         mainPanel.add(randomMenu, this.sRANDOM);
         mainPanel.add(historyMenu, this.sHISTORY);
         mainPanel.add(quizMenu, this.sQUIZ);
+        mainPanel.add(changeMenu, this.sCHANGE);
         this.frame.add(mainPanel, BorderLayout.CENTER);
 
         state.addItemListener(new ItemListener()
@@ -295,6 +316,26 @@ class mainGUI
                             int request = randomMenu.getRandomSelection(data.getSize());
                             String[] res = data.getElementByIndex(request);
                             randomMenu.setRandomInput(res);
+                        }break;
+
+                        case 4:
+                        {
+
+                        }break;
+
+                        case 5:
+                        {
+                            String[] request = changeMenu.getRequest();
+                            if((request[0].equals(null) || request[0].equals("")) || (request[1].equals("") || request[1].equals(null)) ||
+                            (request[2].equals(changeMenu.NO_OPTION)))
+                            {
+                                break;
+                            }
+                            else if(request[2].equals(changeMenu.OPTION_ADD))
+                            {
+
+                            }
+
                         }break;
                     }
                     state.setSelected(false);
@@ -349,6 +390,11 @@ class mainGUI
             {
                 this.controlLayout.show(this.mainPanel, this.sQUIZ);
             }break;
+
+            case 5:
+            {
+                this.controlLayout.show(this.mainPanel, this.sCHANGE);
+            }
            
         }
         
@@ -738,4 +784,164 @@ class QuizMenu extends JPanel
     {
 
     }
+}
+
+
+class ChangeMenu extends JPanel
+{
+    private String inputSlag;
+    private String inputDefinition;
+    private JTextField getSlagText;
+    private JTextField getDefinitionText;
+    private JLabel status;
+    private String INPUT_WARNING = "Please input both 'input field'!";
+    public final String NO_OPTION = "0";
+    public final String OPTION_ADD = "1";
+    public final String OPTION_UPDATE = "2";
+    public final String OPTION_DELETE = "3";
+    public final String OPTION_RESET = "4";
+    private String option;
+
+    ChangeMenu(JRadioButton component)
+    {
+        inputSlag = new String("");
+        inputDefinition = new String("");
+
+        option = 0;
+        JPanel body = new JPanel();
+        body.setLayout(new BorderLayout());
+
+        JPanel body1 = new JPanel();
+        JLabel getSlagLabel = new JLabel("Input Slang word:");
+        getSlagText = new JTextField(18);
+        body1.add(getSlagLabel);
+        body1.add(getSlagText);
+
+        JPanel body_23 = new JPanel();
+        body_23.setLayout(new BoxLayout(body_23, BoxLayout.Y_AXIS));
+
+        JPanel body2 = new JPanel();
+        JLabel getDefinitionLabel = new JLabel("Input meaning:");
+        getDefinitionText = new JTextField(20);
+        body2.add(getDefinitionLabel);
+        body2.add(getDefinitionText);
+
+        JPanel body3 = new JPanel();
+        JButton addButton = new JButton("Add");
+        JButton updateButton = new JButton("Update");
+        JButton deleteButton = new JButton("Delete");
+        JButton resetButton = new JButton("Reset");
+
+        body_23.add(body2);
+        body_23.add(body3);
+
+        status = new JLabel("Status:");
+
+        body3.add(addButton);
+        body3.add(updateButton);
+        body3.add(deleteButton);
+        body3.add(resetButton);
+
+
+
+        body.add(body1, BorderLayout.PAGE_START);
+        body.add(body_23, BorderLayout.CENTER);
+        body.add(status, BorderLayout.PAGE_END);
+        
+        this.add(body, BorderLayout.CENTER);
+
+        addButton.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent ae)
+            {
+                inputSlag = getSlagText.getText();
+                inputDefinition = getDefinitionText.getText();
+                if(inputSlag.equals("") || inputSlag.equals(null) || inputDefinition.equals("") || inputDefinition.equals(null))
+                {
+                    status.setText("Status: " + INPUT_WARNING);
+                }
+                else
+                {
+                    option = OPTION_ADD;
+                    component.setSelected(true);
+                }
+            }
+        });
+
+        updateButton.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent ae)
+            {
+                inputSlag = getSlagText.getText();
+                inputDefinition = getDefinitionText.getText();
+                if(inputSlag.equals("") || inputSlag.equals(null) || inputDefinition.equals("") || inputDefinition.equals(null))
+                {
+                    status.setText("Status: " + INPUT_WARNING);
+                }
+                else
+                {
+                    option = OPTION_UPDATE;
+                    component.setSelected(true);
+                }
+            }
+        });
+
+        deleteButton.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent ae)
+            {
+                inputSlag = getSlagText.getText();
+                inputDefinition = getDefinitionText.getText();
+                if(inputSlag.equals("") || inputSlag.equals(null) || inputDefinition.equals("") || inputDefinition.equals(null))
+                {
+                    status.setText("Status: " + INPUT_WARNING);
+                }
+                else
+                {
+                    int check = JOptionPane.showConfirmDialog(null, "Do you want to delete '" + inputSlag + "'?", "Delete confirm", JOptionPane.YES_NO_OPTION);
+                    if(check == 0)// yes
+                    {
+                        option = OPTION_DELETE;
+                        component.setSelected(true);
+                    }
+                    else
+                    {
+                        option = NO_OPTION;
+                    }
+                }
+            }
+        });
+
+        resetButton.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent ae)
+            {
+                int check = JOptionPane.showConfirmDialog(null, "Do you want to reset all data?", "Reset confirm", JOptionPane.YES_NO_OPTION);
+                if(check == 0) // yes
+                {
+                    option = OPTION_RESET;
+                    component.setSelected(true);
+                }
+                else
+                {
+                    option = NO_OPTION;
+                }
+            }
+        });
+    }
+
+    public String[] getRequest()
+    {
+        String[] request = new String[3];
+        request[0] = inputSlag;
+        request[1] = inputDefinition;
+        request[2] = option;
+        return request;
+    }
+
+    public void setStatus(String _status)
+    {
+        status.setText(_status);
+    }
+
 }
